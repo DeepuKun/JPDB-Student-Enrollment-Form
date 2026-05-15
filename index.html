@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Enrollment Form</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+  <script src="http://login2explore.com/jpdb/resources/js/0.0.3/jpdb-commons.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+  <h2>Student Enrollment</h2>
+  <p class="subtitle">Manage student information securely and efficiently</p>
+
+  <div class="form-fields">
+    <div class="rollno-section">
+      <div class="form-group">
+        <label>Roll No</label>
+        <input type="text" id="rollNo" placeholder="Enter roll number">
+      </div>
+      <button id="checkBtn">Submit</button>
+    </div>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="fullName" disabled placeholder="Full name">
+    </div>
+
+    <div class="form-group">
+      <label>Class</label>
+      <input type="text" id="studentClass" disabled placeholder="Class">
+    </div>
+
+    <div class="form-group">
+      <label>Birth Date</label>
+      <input type="date" id="birthDate" disabled>
+    </div>
+
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" id="address" disabled placeholder="Address">
+    </div>
+
+    <div class="form-group">
+      <label>Enrollment Date</label>
+      <input type="date" id="enrollDate" disabled>
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button id="saveBtn" disabled>Save</button>
+    <button id="updateBtn" disabled>Update</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+</div>
+
+<script>
+
+const token = "90935212|-31949242017852793|90958815";
+const dbName = "SCHOOL-DB";
+const relName = "STUDENT-TABLE";
+
+let rollGlobal = "";
+let recNoGlobal = "";
+
+//---Reset---
+function resetForm() {
+  $("#rollNo").val("").prop("disabled", false);
+
+  $("#fullName, #studentClass, #birthDate, #address, #enrollDate")
+    .val("")
+    .prop("disabled", true);
+
+  $("#saveBtn, #updateBtn").prop("disabled", true);
+
+  $("#rollNo").focus();
+}
+
+//---Check---
+$("#checkBtn").click(function () {
+
+  let roll = $("#rollNo").val();
+  if (roll === "") {
+    alert("Enter Roll No");
+    return;
+  }
+
+  rollGlobal = roll;
+
+  let reqStr = createGET_BY_KEYRequest(
+    token,
+    dbName,
+    relName,
+    JSON.stringify({ "Roll-No": roll })
+  );
+
+  jQuery.ajaxSetup({ async: false });
+
+  let result = executeCommandAtGivenBaseUrl(
+    reqStr,
+    "http://api.login2explore.com:5577",
+    "/api/irl"
+  );
+
+  jQuery.ajaxSetup({ async: true });
+
+
+  if (result.status === 200) {
+    try {
+      let parsedData = JSON.parse(result.data);
+      let r = parsedData.record;
+      let recNo = parsedData.rec_no;
+
+      if (r) {
+        recNoGlobal = recNo;
+        
+        $("#fullName").val(r["Full-Name"]);
+        $("#studentClass").val(r["Class"]);
+        $("#birthDate").val(r["Birth-Date"]);
+        $("#address").val(r["Address"]);
+        $("#enrollDate").val(r["Enrollment-Date"]);
+
+        $("#rollNo").prop("disabled", true);
+
+        $("#fullName, #studentClass, #birthDate, #address, #enrollDate")
+          .prop("disabled", false);
+
+        $("#updateBtn").prop("disabled", false);
+        $("#saveBtn").prop("disabled", true);
+      }
+    } catch (e) {
+      console.error("Error parsing response:", e);
+      
+      $("#fullName, #studentClass, #birthDate, #address, #enrollDate")
+        .val("")
+        .prop("disabled", false);
+
+      $("#saveBtn").prop("disabled", false);
+      $("#updateBtn").prop("disabled", true);
+    }
+  }
+
+  else {
+
+    $("#fullName, #studentClass, #birthDate, #address, #enrollDate")
+      .val("")
+      .prop("disabled", false);
+
+    $("#saveBtn").prop("disabled", false);
+    $("#updateBtn").prop("disabled", true);
+  }
+});
+
+
+$("#saveBtn").click(function () {
+
+
+  let roll = $("#rollNo").val();
+  let fullName = $("#fullName").val();
+  let studentClass = $("#studentClass").val();
+  let birthDate = $("#birthDate").val();
+  let address = $("#address").val();
+  let enrollDate = $("#enrollDate").val();
+
+  if (roll === "" || fullName === "" || studentClass === "" || 
+      birthDate === "" || address === "" || enrollDate === "") {
+    alert("All fields are required!");
+    return;
+  }
+
+  let obj = {
+    "Roll-No": roll,
+    "Full-Name": fullName,
+    "Class": studentClass,
+    "Birth-Date": birthDate,
+    "Address": address,
+    "Enrollment-Date": enrollDate
+  };
+
+  let reqStr = createPUTRequest(token, JSON.stringify(obj), dbName, relName);
+
+  jQuery.ajaxSetup({ async: false });
+
+  let result = executeCommandAtGivenBaseUrl(
+    reqStr,
+    "http://api.login2explore.com:5577",
+    "/api/iml"
+  );
+
+  jQuery.ajaxSetup({ async: true });
+
+  if (result.status === 200) {
+    alert("Saved Successfully!");
+    resetForm();
+  } else {
+    alert("Error: " + result.message + ". This Roll No might already exist!");
+  }
+});
+
+
+
+$("#updateBtn").click(function () {
+
+
+  let roll = $("#rollNo").val();
+  let fullName = $("#fullName").val();
+  let studentClass = $("#studentClass").val();
+  let birthDate = $("#birthDate").val();
+  let address = $("#address").val();
+  let enrollDate = $("#enrollDate").val();
+
+  if (roll === "" || fullName === "" || studentClass === "" || 
+      birthDate === "" || address === "" || enrollDate === "") {
+    alert("All fields are required!");
+    return;
+  }
+
+  let obj = {
+    "Roll-No": roll,
+    "Full-Name": fullName,
+    "Class": studentClass,
+    "Birth-Date": birthDate,
+    "Address": address,
+    "Enrollment-Date": enrollDate
+  };
+
+  let setRequest = {
+    "token": token,
+    "cmd": "SET",
+    "dbName": dbName,
+    "rel": relName,
+    "type": "UPDATE",
+    "primaryKey": "Roll-No",
+    "jsonStr": obj
+  };
+
+  let reqStr = JSON.stringify(setRequest);
+
+  jQuery.ajaxSetup({ async: false });
+
+  let result = executeCommandAtGivenBaseUrl(
+    reqStr,
+    "http://api.login2explore.com:5577",
+    "/api/iml/set"
+  );
+
+  jQuery.ajaxSetup({ async: true });
+
+  if (result.status === 200) {
+    alert("Updated Successfully!");
+    resetForm();
+  } else {
+    alert("Error: " + (result.message || "Failed to update record"));
+  }
+});
+
+
+
+$("#resetBtn").click(function () {
+  resetForm();
+});
+
+resetForm();
+
+</script>
+
+</body>
+</html>
